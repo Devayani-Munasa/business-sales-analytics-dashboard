@@ -1,23 +1,27 @@
-print("Step 1: Program started")
-
 import pandas as pd
-import mysql.connector
-
-print("Step 2: Libraries imported")
+import pymysql
 
 from config import HOST, USER, PASSWORD, DATABASE
 
-print("Step 3: Config imported")
+print("🚀 Starting Database Loader...")
 
-connection = mysql.connector.connect(
+# Connect to MySQL
+connection = pymysql.connect(
     host=HOST,
     user=USER,
     password=PASSWORD,
-    database=DATABASE
+    database=DATABASE,
+    port=3306,
+    charset="utf8mb4"
 )
 
 print("✅ Connected to MySQL!")
 
-connection.close()
+cursor = connection.cursor()
 
-print("✅ Connection closed.")
+# Read cleaned CSV
+df = pd.read_csv("data/cleaned/cleaned_sales.csv")
+
+print(f"✅ CSV Loaded ({len(df)} rows)")
+
+print(df.head())
