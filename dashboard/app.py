@@ -1,0 +1,374 @@
+import streamlit as st
+import pandas as pd
+import pymysql
+import plotly.express as px
+from datetime import datetime
+
+
+# ---------------------------------
+# Page Configuration
+# ---------------------------------
+st.set_page_config(
+    page_title="Business Sales Analytics Dashboard",
+    page_icon="📊",
+    layout="wide"
+)
+
+
+# ---------------------------------
+# Load Data
+# ---------------------------------
+@st.cache_data
+def load_data():
+
+    connection = pymysql.connect(
+        host="127.0.0.1",
+        user="root",
+        password="Hrithik.11@",
+        database="sales_dashboard"
+    )
+
+    query = "SELECT * FROM sales"
+
+    df = pd.read_sql(query, connection)
+
+    connection.close()
+
+    return df
+
+
+df = load_data()
+
+
+# ---------------------------------
+# Sidebar Filters
+# ---------------------------------
+st.sidebar.title("📊 Dashboard Filters")
+
+st.sidebar.markdown("---")
+
+years = ["All"] + sorted(df["order_year"].unique().tolist())
+
+selected_year = st.sidebar.selectbox(
+    "Select Year",
+    years
+)
+
+regions = ["All"] + sorted(df["region"].unique().tolist())
+
+selected_region = st.sidebar.selectbox(
+    "Select Region",
+    regions
+)
+
+categories = ["All"] + sorted(df["category"].unique().tolist())
+
+selected_category = st.sidebar.selectbox(
+    "Select Category",
+    categories
+)
+
+
+# ---------------------------------
+# Apply Filters
+# ---------------------------------
+filtered_df = df.copy()
+
+if selected_year != "All":
+    filtered_df = filtered_df[
+        filtered_df["order_year"] == selected_year
+    ]
+
+if selected_region != "All":
+    filtered_df = filtered_df[
+        filtered_df["region"] == selected_region
+    ]
+
+if selected_category != "All":
+    filtered_df = filtered_df[
+        filtered_df["category"] == selected_category
+    ]
+
+    # ---------------------------------
+# Dashboard Header
+# ---------------------------------
+st.title("📊 Business Sales Analytics Dashboard")
+
+st.markdown("""
+Analyze business sales performance using interactive charts and filters.
+""")
+
+st.success("✅ Connected to MySQL Successfully!")
+
+# ---------------------------------
+# KPI Calculations
+# ---------------------------------
+total_sales = filtered_df["sales"].sum()
+total_profit = filtered_df["profit"].sum()
+total_orders = filtered_df["order_id"].nunique()
+total_quantity = filtered_df["quantity"].sum()
+
+# ---------------------------------
+# KPI Cards
+# ---------------------------------
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric(
+        "💰 Total Sales",
+        f"${total_sales:,.2f}"
+    )
+
+with col2:
+    st.metric(
+        "📈 Total Profit",
+        f"${total_profit:,.2f}"
+    )
+
+with col3:
+    st.metric(
+        "📦 Total Orders",
+        total_orders
+    )
+
+with col4:
+    st.metric(
+        "🛒 Quantity Sold",
+        f"{total_quantity:,}"
+    )
+
+# ---------------------------------
+# Dashboard Information
+# ---------------------------------
+st.caption(f"📄 Showing {len(filtered_df):,} records")
+
+st.caption(
+    f"🕒 Last Updated: {datetime.now().strftime('%d-%m-%Y %I:%M %p')}"
+)
+
+st.divider()
+
+# ---------------------------------
+# Sales by Category
+# ---------------------------------
+category_sales = (
+    filtered_df.groupby("category")["sales"]
+    .sum()
+    .reset_index()
+)
+
+fig_category = px.bar(
+    category_sales,
+    x="category",
+    y="sales",
+    title="📊 Sales by Category",
+    text_auto=".2s"
+)
+
+fig_category.update_layout(
+    xaxis_title=None,
+    yaxis_title="Sales"
+)
+
+# ---------------------------------
+# Sales by Region
+# ---------------------------------
+region_sales = (
+    filtered_df.groupby("region")["sales"]
+    .sum()
+    .reset_index()
+)
+
+fig_region = px.pie(
+    region_sales,
+    names="region",
+    values="sales",
+    hole=0.45,
+    title="🌍 Sales by Region"
+)
+
+# ---------------------------------
+# Monthly Sales Trend
+# ---------------------------------
+month_order = [
+    "January","February","March","April",
+    "May","June","July","August",
+    "September","October","November","December"
+]
+
+monthly_sales = (
+    filtered_df.groupby("order_month")["sales"]
+    .sum()
+    .reindex(month_order)
+    .reset_index()
+)
+
+fig_month = px.line(
+    monthly_sales,
+    x="order_month",
+    y="sales",
+    markers=True,
+    title="📅 Monthly Sales Trend"
+)
+
+fig_month.update_layout(
+    xaxis_title=None,
+    yaxis_title="Sales"
+)
+
+# ---------------------------------
+# Top Customers
+# ---------------------------------
+top_customers = (
+    filtered_df.groupby("customer_name")["sales"]
+    .sum()
+    .sort_values(ascending=False)
+    .head(10)
+    .reset_index()
+)
+
+fig_customers = px.bar(
+    top_customers,
+    x="sales",
+    y="customer_name",
+    orientation="h",
+    text_auto=".2s",
+    title="🏆 Top 10 Customers"
+)
+
+fig_customers.update_layout(
+    yaxis={"categoryorder": "total ascending"},
+    xaxis_title="Sales",
+    yaxis_title=None
+)
+
+# ---------------------------------
+# Top Products
+# ---------------------------------
+top_products = (
+    filtered_df.groupby("product_name")["sales"]
+    .sum()
+    .sort_values(ascending=False)
+    .head(10)
+    .reset_index()
+)
+
+fig_products = px.bar(
+    top_products,
+    x="sales",
+    y="product_name",
+    orientation="h",
+    text_auto=".2s",
+    title="📦 Top 10 Products"
+)
+
+fig_products.update_layout(
+    yaxis={"categoryorder": "total ascending"},
+    xaxis_title="Sales",
+    yaxis_title=None
+)
+
+# ---------------------------------
+# Profit by Category
+# ---------------------------------
+profit_category = (
+    filtered_df.groupby("category")["profit"]
+    .sum()
+    .reset_index()
+)
+
+fig_profit = px.bar(
+    profit_category,
+    x="category",
+    y="profit",
+    text_auto=".2s",
+    title="📈 Profit by Category"
+)
+
+fig_profit.update_layout(
+    xaxis_title=None,
+    yaxis_title="Profit"
+)
+
+# =================================
+# Display Charts
+# =================================
+
+# Row 1
+left, right = st.columns(2)
+
+with left:
+    st.plotly_chart(fig_category, width="stretch")
+
+with right:
+    st.plotly_chart(fig_region, width="stretch")
+
+# Row 2
+st.plotly_chart(fig_month, width="stretch")
+
+# Row 3
+left, right = st.columns(2)
+
+with left:
+    st.plotly_chart(fig_customers, width="stretch")
+
+with right:
+    st.plotly_chart(fig_products, width="stretch")
+
+# Row 4
+st.plotly_chart(fig_profit, width="stretch")
+
+# ---------------------------------
+# Sales Data
+# ---------------------------------
+st.divider()
+
+st.subheader("📋 Sales Data")
+
+st.dataframe(
+    filtered_df,
+    width="stretch",
+    height=400
+)
+
+# ---------------------------------
+# Download Filtered Data
+# ---------------------------------
+csv = filtered_df.to_csv(index=False).encode("utf-8")
+
+st.download_button(
+    label="📥 Download Filtered Data (CSV)",
+    data=csv,
+    file_name="filtered_sales_data.csv",
+    mime="text/csv"
+)
+
+# ---------------------------------
+# Dashboard Summary
+# ---------------------------------
+st.divider()
+
+st.subheader("📊 Dashboard Summary")
+
+summary_col1, summary_col2 = st.columns(2)
+
+with summary_col1:
+    st.info(f"📄 Records Displayed: {len(filtered_df):,}")
+
+with summary_col2:
+    st.info(f"📅 Years Available: {df['order_year'].nunique()}")
+
+    # ---------------------------------
+# Dashboard Summary
+# ---------------------------------
+st.divider()
+
+st.subheader("📊 Dashboard Summary")
+
+summary_col1, summary_col2 = st.columns(2)
+
+with summary_col1:
+    st.info(f"📄 Records Displayed: {len(filtered_df):,}")
+
+with summary_col2:
+    st.info(f"📅 Years Available: {df['order_year'].nunique()}")
