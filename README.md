@@ -1,85 +1,105 @@
 # 📊 Business Sales Analytics Dashboard
 
-A data analytics project built using **Python, MySQL, Pandas, and Streamlit** to analyze sales data and generate business insights.
+An interactive Business Sales Analytics Dashboard built with **Python, Streamlit, MySQL, Pandas, and Plotly**. This dashboard helps analyze sales performance through KPIs, interactive charts, filters, and downloadable reports.
 
-## 🚀 Project Overview
+---
 
-This project demonstrates a complete data analytics workflow:
+## ✨ Features
 
-- Data Exploration
-- Data Cleaning
-- Feature Engineering
-- MySQL Database Integration
-- SQL Analysis
-- Interactive Dashboard (Coming Soon)
+- 📊 Interactive KPI Cards
+- 🌍 Sales by Region Analysis
+- 📈 Monthly Sales Trend
+- 📦 Sales by Category
+- 🏆 Top 10 Customers
+- 📦 Top 10 Products
+- 💹 Profit by Category
+- 🔍 Sidebar Filters (Year, Region, Category)
+- 📋 Interactive Sales Data Table
+- 📥 Download Filtered Data as CSV
+
+---
 
 ## 🛠️ Technologies Used
 
-- Python 3.14
-- Pandas
-- NumPy
+- Python
+- Streamlit
 - MySQL
-- MySQL Workbench
-- Git & GitHub
-- Streamlit (Upcoming)
+- Pandas
+- Plotly Express
+- PyMySQL
 
-## 📁 Project Structure
+---
+
+## 📸 Screenshots
+
+### Dashboard Overview
+
+![Dashboard Overview](screenshots/dashboard-overview.png)
+
+### Interactive Filters
+
+![Interactive Filters](screenshots/filters-demo.png)
+
+### Analytics Charts
+
+![Analytics Charts](screenshots/charts.png)
+
+### Sales Data
+
+![Sales Data](screenshots/data-table.png)
+
+---
+
+## 📂 Project Structure
 
 ```
 business-sales-analytics-dashboard/
 │
+├── dashboard/
+│   └── app.py
 ├── data/
-│   ├── raw/
-│   └── cleaned/
-│
 ├── database/
-│
-├── notebooks/
-│
-├── reports/
-│
 ├── screenshots/
-│
-├── src/
-│
-├── README.md
 ├── requirements.txt
-└── main.py
+└── README.md
 ```
 
-## ✅ Current Progress
+---
 
-- [x] Project setup
-- [x] Git repository initialized
-- [x] Data exploration
-- [x] Data cleaning
-- [x] Feature engineering
-- [x] MySQL database created
-- [x] Sales table created
+## 🚀 How to Run
 
-## 🔄 Work in Progress
+1. Clone the repository
 
-- Loading cleaned data into MySQL
-- SQL analysis
-- Streamlit dashboard
-- Business reports and visualizations
+```bash
+git clone https://github.com/Devayani-Munasa/business-sales-analytics-dashboard.git
+```
 
-## 📈 Dataset
+2. Move into the project folder
 
-The project uses the **Superstore Sales Dataset** for sales analysis.
+```bash
+cd business-sales-analytics-dashboard
+```
 
-## 🎯 Future Enhancements
+3. Install the required packages
 
-- Sales KPI Dashboard
-- Monthly Sales Trends
-- Top Customers Analysis
-- Regional Performance Analysis
-- Category-wise Profit Analysis
-- Export Reports
+```bash
+pip install -r requirements.txt
+```
+
+4. Run the Streamlit application
+
+```bash
+python -m streamlit run dashboard/app.py
+```
+
+---
 
 ## 👩‍💻 Author
 
 **Devayani Munasa**
 
-GitHub: https://github.com/Devayani-Munasa
-LinkedIn: https://www.linkedin.com/in/devayani-munasa/
+- GitHub: https://github.com/Devayani-Munasa
+- LinkedIn: https://www.linkedin.com/in/devayani-munasa/
+
+---
+⭐ If you found this project useful, consider giving it a star on GitHub!s
