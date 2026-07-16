@@ -43,9 +43,29 @@ df = load_data()
 # ---------------------------------
 # Sidebar Filters
 # ---------------------------------
-st.sidebar.title("📊 Dashboard Filters")
+st.sidebar.title("📌 Dashboard Filters")
 
-st.sidebar.markdown("---")
+st.sidebar.markdown(
+"""
+Welcome to the **Business Sales Analytics Dashboard**.
+
+Use the filters below to explore your sales data interactively.
+"""
+)
+
+st.sidebar.info(
+"""
+### Available Filters
+
+📅 Year
+
+🌍 Region
+
+📦 Category
+"""
+)
+
+st.sidebar.divider()
 
 years = ["All"] + sorted(df["order_year"].unique().tolist())
 
@@ -68,6 +88,14 @@ selected_category = st.sidebar.selectbox(
     categories
 )
 
+st.sidebar.divider()
+
+st.sidebar.success("📊 Dataset Overview")
+
+st.sidebar.write(f"**Total Records:** {len(df):,}")
+st.sidebar.write(f"**Years:** {df['order_year'].nunique()}")
+st.sidebar.write(f"**Regions:** {df['region'].nunique()}")
+st.sidebar.write(f"**Categories:** {df['category'].nunique()}")
 
 # ---------------------------------
 # Apply Filters
@@ -89,16 +117,31 @@ if selected_category != "All":
         filtered_df["category"] == selected_category
     ]
 
-    # ---------------------------------
+# ---------------------------------
 # Dashboard Header
 # ---------------------------------
 st.title("📊 Business Sales Analytics Dashboard")
 
 st.markdown("""
-Analyze business sales performance using interactive charts and filters.
+Welcome to the **Business Sales Analytics Dashboard**.
+
+This dashboard helps analyze sales performance using interactive charts,
+filters, and key business metrics powered by **Python, MySQL, Pandas,
+Plotly, and Streamlit**.
 """)
 
-st.success("✅ Connected to MySQL Successfully!")
+st.success("🟢 Connected to MySQL Database")
+
+# ---------------------------------
+# Number Formatter
+# ---------------------------------
+def format_number(value):
+    if value >= 1_000_000:
+        return f"${value/1_000_000:.2f}M"
+    elif value >= 1_000:
+        return f"${value/1_000:.2f}K"
+    else:
+        return f"${value:,.2f}"
 
 # ---------------------------------
 # KPI Calculations
@@ -111,20 +154,21 @@ total_quantity = filtered_df["quantity"].sum()
 # ---------------------------------
 # KPI Cards
 # ---------------------------------
+st.subheader("📈 Key Performance Indicators")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     st.metric(
         "💰 Total Sales",
-        f"${total_sales:,.2f}"
+        format_number(total_sales)
     )
 
 with col2:
     st.metric(
         "📈 Total Profit",
-        f"${total_profit:,.2f}"
+        format_number(total_profit)
     )
-
+    
 with col3:
     st.metric(
         "📦 Total Orders",
@@ -147,7 +191,7 @@ st.caption(
 )
 
 st.divider()
-
+st.subheader("📊 Sales by Category")
 # ---------------------------------
 # Sales by Category
 # ---------------------------------
@@ -169,7 +213,8 @@ fig_category.update_layout(
     xaxis_title=None,
     yaxis_title="Sales"
 )
-
+st.divider()
+st.subheader("🌍 Sales by Region")
 # ---------------------------------
 # Sales by Region
 # ---------------------------------
@@ -186,7 +231,8 @@ fig_region = px.pie(
     hole=0.45,
     title="🌍 Sales by Region"
 )
-
+st.divider()
+st.subheader("📅 Monthly Sales Trend")
 # ---------------------------------
 # Monthly Sales Trend
 # ---------------------------------
@@ -215,7 +261,8 @@ fig_month.update_layout(
     xaxis_title=None,
     yaxis_title="Sales"
 )
-
+st.divider()
+st.subheader("🏆 Top 10 Customers")
 # ---------------------------------
 # Top Customers
 # ---------------------------------
@@ -241,7 +288,8 @@ fig_customers.update_layout(
     xaxis_title="Sales",
     yaxis_title=None
 )
-
+st.divider()
+st.subheader("📦 Top 10 Products")
 # ---------------------------------
 # Top Products
 # ---------------------------------
@@ -267,7 +315,8 @@ fig_products.update_layout(
     xaxis_title="Sales",
     yaxis_title=None
 )
-
+st.divider()
+st.subheader("📈 Profit by Category")
 # ---------------------------------
 # Profit by Category
 # ---------------------------------
@@ -322,7 +371,6 @@ st.plotly_chart(fig_profit, width="stretch")
 # Sales Data
 # ---------------------------------
 st.divider()
-
 st.subheader("📋 Sales Data")
 
 st.dataframe(
@@ -344,31 +392,43 @@ st.download_button(
 )
 
 # ---------------------------------
-# Dashboard Summary
+# Business Insights
 # ---------------------------------
 st.divider()
 
-st.subheader("📊 Dashboard Summary")
+st.subheader("💡 Business Insights")
 
-summary_col1, summary_col2 = st.columns(2)
+best_region = (
+    filtered_df.groupby("region")["sales"]
+    .sum()
+    .idxmax()
+)
 
-with summary_col1:
-    st.info(f"📄 Records Displayed: {len(filtered_df):,}")
+best_category = (
+    filtered_df.groupby("category")["sales"]
+    .sum()
+    .idxmax()
+)
 
-with summary_col2:
-    st.info(f"📅 Years Available: {df['order_year'].nunique()}")
+best_customer = (
+    filtered_df.groupby("customer_name")["sales"]
+    .sum()
+    .idxmax()
+)
 
-    # ---------------------------------
-# Dashboard Summary
-# ---------------------------------
-st.divider()
+best_month = (
+    filtered_df.groupby("order_month")["sales"]
+    .sum()
+    .idxmax()
+)
 
-st.subheader("📊 Dashboard Summary")
+col1, col2 = st.columns(2)
 
-summary_col1, summary_col2 = st.columns(2)
+with col1:
+    st.success(f"🌍 Best Performing Region: **{best_region}**")
+    st.success(f"📦 Best Selling Category: **{best_category}**")
 
-with summary_col1:
-    st.info(f"📄 Records Displayed: {len(filtered_df):,}")
-
-with summary_col2:
-    st.info(f"📅 Years Available: {df['order_year'].nunique()}")
+with col2:
+    st.success(f"🏆 Top Customer: **{best_customer}**")
+    st.success(f"📅 Highest Sales Month: **{best_month}**")
+  
