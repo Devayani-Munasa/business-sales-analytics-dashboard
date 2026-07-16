@@ -3,6 +3,8 @@ import pandas as pd
 import pymysql
 import plotly.express as px
 from datetime import datetime
+from dotenv import load_dotenv
+import os
 
 
 # ---------------------------------
@@ -14,6 +16,10 @@ st.set_page_config(
     layout="wide"
 )
 
+# ---------------------------------
+# Load Environment Variables
+# ---------------------------------
+load_dotenv()
 
 # ---------------------------------
 # Load Data
@@ -22,10 +28,10 @@ st.set_page_config(
 def load_data():
 
     connection = pymysql.connect(
-        host="127.0.0.1",
-        user="root",
-        password="Hrithik.11@",
-        database="sales_dashboard"
+        host=os.getenv("DB_HOST"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_NAME")
     )
 
     query = "SELECT * FROM sales"
@@ -168,7 +174,7 @@ with col2:
         "📈 Total Profit",
         format_number(total_profit)
     )
-    
+
 with col3:
     st.metric(
         "📦 Total Orders",
