@@ -6,7 +6,6 @@ from datetime import datetime
 from dotenv import load_dotenv
 import os
 
-
 # ---------------------------------
 # Page Configuration
 # ---------------------------------
@@ -27,40 +26,233 @@ load_dotenv()
 @st.cache_data
 def load_data():
 
-    connection = pymysql.connect(
-        host=os.getenv("DB_HOST"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_NAME")
-    )
+    try:
+        connection = pymysql.connect(
+            host=os.getenv("DB_HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_NAME")
+        )
 
-    query = "SELECT * FROM sales"
+        query = "SELECT * FROM sales"
 
-    df = pd.read_sql(query, connection)
+        df = pd.read_sql(query, connection)
 
-    connection.close()
+        connection.close()
 
-    return df
+        return df
+
+    except Exception as e:
+        st.error("❌ Unable to connect to MySQL Database")
+        st.error(e)
+        st.stop()
 
 
 df = load_data()
+# ---------------------------------
+# Helper Functions
+# ---------------------------------
+
+def format_number(value):
+    """Format numbers for KPI cards."""
+
+    if value >= 1_000_000:
+        return f"${value / 1_000_000:.2f}M"
+
+    elif value >= 1_000:
+        return f"${value / 1_000:.2f}K"
+
+    else:
+        return f"${value:,.2f}"
 
 
 # ---------------------------------
+# Sales by Category Chart
+# ---------------------------------
+
+def create_category_chart(data):
+
+    category_sales = (
+        data.groupby("category")["sales"]
+        .sum()
+        .reset_index()
+    )
+
+    fig = px.bar(
+        category_sales,
+        x="category",
+        y="sales",
+        title="📊 Sales by Category",
+        text_auto=".2s"
+    )
+
+    fig.update_layout(
+        xaxis_title=None,
+        yaxis_title="Sales"
+    )
+
+    return fig
+
+
+# ---------------------------------
+# Sales by Region Chart
+# ---------------------------------
+
+def create_region_chart(data):
+
+    region_sales = (
+        data.groupby("region")["sales"]
+        .sum()
+        .reset_index()
+    )
+
+    fig = px.pie(
+        region_sales,
+        names="region",
+        values="sales",
+        hole=0.45,
+        title="🌍 Sales by Region"
+    )
+
+    return fig
+
+    # ---------------------------------
+# Monthly Sales Trend Chart
+# ---------------------------------
+
+def create_monthly_chart(data):
+
+    month_order = [
+        "January", "February", "March", "April",
+        "May", "June", "July", "August",
+        "September", "October", "November", "December"
+    ]
+
+    monthly_sales = (
+        data.groupby("order_month")["sales"]
+        .sum()
+        .reindex(month_order)
+        .reset_index()
+    )
+
+    fig = px.line(
+        monthly_sales,
+        x="order_month",
+        y="sales",
+        markers=True,
+        title="📅 Monthly Sales Trend"
+    )
+
+    fig.update_layout(
+        xaxis_title=None,
+        yaxis_title="Sales"
+    )
+
+    return fig
+
+
+# ---------------------------------
+# Top Customers Chart
+# ---------------------------------
+
+def create_customers_chart(data):
+
+    top_customers = (
+        data.groupby("customer_name")["sales"]
+        .sum()
+        .sort_values(ascending=False)
+        .head(10)
+        .reset_index()
+    )
+
+    fig = px.bar(
+        top_customers,
+        x="sales",
+        y="customer_name",
+        orientation="h",
+        text_auto=".2s",
+        title="🏆 Top 10 Customers"
+    )
+
+    fig.update_layout(
+        yaxis={"categoryorder": "total ascending"},
+        xaxis_title="Sales",
+        yaxis_title=None
+    )
+
+    return fig
+
+
+# ---------------------------------
+# Top Products Chart
+# ---------------------------------
+
+def create_products_chart(data):
+
+    top_products = (
+        data.groupby("product_name")["sales"]
+        .sum()
+        .sort_values(ascending=False)
+        .head(10)
+        .reset_index()
+    )
+
+    fig = px.bar(
+        top_products,
+        x="sales",
+        y="product_name",
+        orientation="h",
+        text_auto=".2s",
+        title="📦 Top 10 Products"
+    )
+
+    fig.update_layout(
+        yaxis={"categoryorder": "total ascending"},
+        xaxis_title="Sales",
+        yaxis_title=None
+    )
+
+    return fig
+
+
+# ---------------------------------
+# Profit by Category Chart
+# ---------------------------------
+
+def create_profit_chart(data):
+
+    profit_category = (
+        data.groupby("category")["profit"]
+        .sum()
+        .reset_index()
+    )
+
+    fig = px.bar(
+        profit_category,
+        x="category",
+        y="profit",
+        text_auto=".2s",
+        title="📈 Profit by Category"
+    )
+
+    fig.update_layout(
+        xaxis_title=None,
+        yaxis_title="Profit"
+    )
+
+    return fig
+    # ---------------------------------
 # Sidebar Filters
 # ---------------------------------
 st.sidebar.title("📌 Dashboard Filters")
 
-st.sidebar.markdown(
-"""
+st.sidebar.markdown("""
 Welcome to the **Business Sales Analytics Dashboard**.
 
 Use the filters below to explore your sales data interactively.
-"""
-)
+""")
 
-st.sidebar.info(
-"""
+st.sidebar.info("""
 ### Available Filters
 
 📅 Year
@@ -68,11 +260,11 @@ st.sidebar.info(
 🌍 Region
 
 📦 Category
-"""
-)
+""")
 
 st.sidebar.divider()
 
+# Year Filter
 years = ["All"] + sorted(df["order_year"].unique().tolist())
 
 selected_year = st.sidebar.selectbox(
@@ -80,6 +272,7 @@ selected_year = st.sidebar.selectbox(
     years
 )
 
+# Region Filter
 regions = ["All"] + sorted(df["region"].unique().tolist())
 
 selected_region = st.sidebar.selectbox(
@@ -87,6 +280,7 @@ selected_region = st.sidebar.selectbox(
     regions
 )
 
+# Category Filter
 categories = ["All"] + sorted(df["category"].unique().tolist())
 
 selected_category = st.sidebar.selectbox(
@@ -122,8 +316,7 @@ if selected_category != "All":
     filtered_df = filtered_df[
         filtered_df["category"] == selected_category
     ]
-
-# ---------------------------------
+    # ---------------------------------
 # Dashboard Header
 # ---------------------------------
 st.title("📊 Business Sales Analytics Dashboard")
@@ -139,17 +332,6 @@ Plotly, and Streamlit**.
 st.success("🟢 Connected to MySQL Database")
 
 # ---------------------------------
-# Number Formatter
-# ---------------------------------
-def format_number(value):
-    if value >= 1_000_000:
-        return f"${value/1_000_000:.2f}M"
-    elif value >= 1_000:
-        return f"${value/1_000:.2f}K"
-    else:
-        return f"${value:,.2f}"
-
-# ---------------------------------
 # KPI Calculations
 # ---------------------------------
 total_sales = filtered_df["sales"].sum()
@@ -161,6 +343,7 @@ total_quantity = filtered_df["quantity"].sum()
 # KPI Cards
 # ---------------------------------
 st.subheader("📈 Key Performance Indicators")
+
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
@@ -195,188 +378,62 @@ st.caption(f"📄 Showing {len(filtered_df):,} records")
 st.caption(
     f"🕒 Last Updated: {datetime.now().strftime('%d-%m-%Y %I:%M %p')}"
 )
-
-st.divider()
-st.subheader("📊 Sales by Category")
 # ---------------------------------
-# Sales by Category
+# Create Charts
 # ---------------------------------
-category_sales = (
-    filtered_df.groupby("category")["sales"]
-    .sum()
-    .reset_index()
-)
+fig_category = create_category_chart(filtered_df)
+fig_region = create_region_chart(filtered_df)
+fig_month = create_monthly_chart(filtered_df)
+fig_customers = create_customers_chart(filtered_df)
+fig_products = create_products_chart(filtered_df)
+fig_profit = create_profit_chart(filtered_df)
 
-fig_category = px.bar(
-    category_sales,
-    x="category",
-    y="sales",
-    title="📊 Sales by Category",
-    text_auto=".2s"
-)
-
-fig_category.update_layout(
-    xaxis_title=None,
-    yaxis_title="Sales"
-)
-st.divider()
-st.subheader("🌍 Sales by Region")
 # ---------------------------------
-# Sales by Region
+# Dashboard Visualizations
 # ---------------------------------
-region_sales = (
-    filtered_df.groupby("region")["sales"]
-    .sum()
-    .reset_index()
-)
-
-fig_region = px.pie(
-    region_sales,
-    names="region",
-    values="sales",
-    hole=0.45,
-    title="🌍 Sales by Region"
-)
-st.divider()
-st.subheader("📅 Monthly Sales Trend")
-# ---------------------------------
-# Monthly Sales Trend
-# ---------------------------------
-month_order = [
-    "January","February","March","April",
-    "May","June","July","August",
-    "September","October","November","December"
-]
-
-monthly_sales = (
-    filtered_df.groupby("order_month")["sales"]
-    .sum()
-    .reindex(month_order)
-    .reset_index()
-)
-
-fig_month = px.line(
-    monthly_sales,
-    x="order_month",
-    y="sales",
-    markers=True,
-    title="📅 Monthly Sales Trend"
-)
-
-fig_month.update_layout(
-    xaxis_title=None,
-    yaxis_title="Sales"
-)
-st.divider()
-st.subheader("🏆 Top 10 Customers")
-# ---------------------------------
-# Top Customers
-# ---------------------------------
-top_customers = (
-    filtered_df.groupby("customer_name")["sales"]
-    .sum()
-    .sort_values(ascending=False)
-    .head(10)
-    .reset_index()
-)
-
-fig_customers = px.bar(
-    top_customers,
-    x="sales",
-    y="customer_name",
-    orientation="h",
-    text_auto=".2s",
-    title="🏆 Top 10 Customers"
-)
-
-fig_customers.update_layout(
-    yaxis={"categoryorder": "total ascending"},
-    xaxis_title="Sales",
-    yaxis_title=None
-)
-st.divider()
-st.subheader("📦 Top 10 Products")
-# ---------------------------------
-# Top Products
-# ---------------------------------
-top_products = (
-    filtered_df.groupby("product_name")["sales"]
-    .sum()
-    .sort_values(ascending=False)
-    .head(10)
-    .reset_index()
-)
-
-fig_products = px.bar(
-    top_products,
-    x="sales",
-    y="product_name",
-    orientation="h",
-    text_auto=".2s",
-    title="📦 Top 10 Products"
-)
-
-fig_products.update_layout(
-    yaxis={"categoryorder": "total ascending"},
-    xaxis_title="Sales",
-    yaxis_title=None
-)
-st.divider()
-st.subheader("📈 Profit by Category")
-# ---------------------------------
-# Profit by Category
-# ---------------------------------
-profit_category = (
-    filtered_df.groupby("category")["profit"]
-    .sum()
-    .reset_index()
-)
-
-fig_profit = px.bar(
-    profit_category,
-    x="category",
-    y="profit",
-    text_auto=".2s",
-    title="📈 Profit by Category"
-)
-
-fig_profit.update_layout(
-    xaxis_title=None,
-    yaxis_title="Profit"
-)
-
-# =================================
-# Display Charts
-# =================================
 
 # Row 1
+st.divider()
+
 left, right = st.columns(2)
 
 with left:
+    st.subheader("📊 Sales by Category")
     st.plotly_chart(fig_category, width="stretch")
 
 with right:
+    st.subheader("🌍 Sales by Region")
     st.plotly_chart(fig_region, width="stretch")
 
 # Row 2
+st.divider()
+
+st.subheader("📅 Monthly Sales Trend")
 st.plotly_chart(fig_month, width="stretch")
 
 # Row 3
+st.divider()
+
 left, right = st.columns(2)
 
 with left:
+    st.subheader("🏆 Top 10 Customers")
     st.plotly_chart(fig_customers, width="stretch")
 
 with right:
+    st.subheader("📦 Top 10 Products")
     st.plotly_chart(fig_products, width="stretch")
 
 # Row 4
-st.plotly_chart(fig_profit, width="stretch")
+st.divider()
 
+st.subheader("📈 Profit by Category")
+st.plotly_chart(fig_profit, width="stretch")
 # ---------------------------------
 # Sales Data
 # ---------------------------------
 st.divider()
+
 st.subheader("📋 Sales Data")
 
 st.dataframe(
@@ -437,4 +494,3 @@ with col1:
 with col2:
     st.success(f"🏆 Top Customer: **{best_customer}**")
     st.success(f"📅 Highest Sales Month: **{best_month}**")
-  
